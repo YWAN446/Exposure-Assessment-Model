@@ -1,0 +1,131 @@
+version <- "v2";
+basedir <- "~/stat/sanipath/exposure/hand/";
+filefunc <- paste(basedir,version,"/",version,".handfunc.r",sep="");
+source(filefunc);
+
+next.state <- function(num.vec,p.vec){
+  att <- ifelse(num.vec[1]>1e8, round(num.vec[1]*p.vec[1]),
+                rbinom(n=1,size=num.vec[1],prob=p.vec[1]));
+  det <- ifelse(num.vec[2]>1e8, round(num.vec[2]*p.vec[2]),
+                rbinom(n=1,size=num.vec[2],prob=p.vec[2]));
+  return(c(num.vec[1]-att+det,num.vec[2]+att-det));
+}
+
+sim.1 <- function(num.tot,num.hand,p.att,p.det,n.it){
+  res <- array(NA,dim=c(n.it+1,2));
+  num.surf <- num.tot-num.hand;
+  res[1,] <- c(num.surf,num.hand);
+  for(k.it in 2:(n.it+1)){
+    res[k.it,] <- next.state(res[k.it-1,],c(p.att,p.det));
+  }
+  return(res)
+}
+
+sim.num <- function(num.tot,num.hand,p.att,p.det,n.it,n.sim){
+  res <- array(NA,dim=c(n.sim,n.it,2));
+  for(k.sim in 1:n.sim){
+    res[k.sim,,] <- sim.1(num.tot,num.hand,p.att,p.det,n.it);
+  }
+  return(res);
+}
+
+# sim.hand.beta <- function(num.tot,num.hand,a.att,a.det,n.it){
+#   p.att <- rbeta(n=1,shape1=a.att[1],shape2=a.att[2]);
+#   p.det <- rbeta(n=1,shape1=a.det[1],shape2=a.det[2]);
+#   res <- sim.1(num.tot,num.hand,p.att,p.det,n.it);
+#   return(res[n.it,2]);
+# }
+
+# estimated number of microbes on surface touched by hand
+# area (cm^2) * concentration (1/cm^2)
+num.surface <- function(conc){
+  lam <- area.hand()*conc;
+  if(lam > 1e8) return(round(lam));
+  return(rpois(n=1,lambda=lam));
+}
+
+# number of microbes on hand after touching surface once
+# assume each event involves `fresh' surface
+hand.floor <- function(n.hnd,conc,dirt){
+  n.srf <- num.surface(conc);
+  p.att <- att.floor.hand();
+  p.det <- det.floor.hand();
+  if(dirt){
+    p.att <- att.dirt.hand();
+    p.det <- det.dirt.hand();
+  }
+  # n.event <- 1 + rpois(n=1,lambda=2);
+  # res <- sim.1(n.srf+n.hnd,n.hnd,p.att,p.det,n.event);
+  # return(res[n.event,2]);
+  res <- next.state(c(n.srf,n.hnd),c(p.att,p.det));
+  return(res[2]);
+}
+
+# number of microbes on hand after touching drain water once
+hand.drain <- function(conc){
+  lam <- adherence.water.hand()*conc;
+  if(lam > 1e8) return(round(lam));
+  return(rpois(n=1,lambda=lam));
+}
+
+# number of microbes ingested when hand in mouth once
+hand.mouth <- function(n.hnd){
+  p.att <- det.bact.hand.mouth()*fraction.hand.in.mouth();
+  p.det <- 0;
+  res <- next.state(c(n.hnd,0),c(p.att,p.det));
+  return(res[2]);
+}
+
+# Generates hand-floor contact events with given rate (freq.hand.surface)
+# and hand-mouth insertion events with given rate (freq.hand.mouth)
+# for a given duration, and returns numbers of bacteria on hand and ingested
+floor.contact <- function(n.hand,dur,comb.vec,dirt=FALSE){
+  ing <- 0;
+  n.hnd <- n.hand;
+  time <- 0;
+  while(time < dur){
+    t.cnt <- exp(-freq.hand.surface());
+    t.mth <- exp(-freq.hand.mouth(outdoor=FALSE));
+    time <- time + min(t.cnt,t.mth);
+    if(t.mth < t.cnt){
+      ing <- ing + hand.mouth(n.hnd);
+      # cat("ingested: ", ing,"\n");
+    }else{
+      n.hnd <- hand.floor(n.hnd,env.conc(comb.vec),dirt);
+      # cat("hand: ",n.hnd," ");
+    }
+  }
+  return(c(n.hnd,ing));
+}
+
+# Numbers of bacteria after washing hands, given numbers before
+hand.wash <- function(n.before){
+  p.det <- det.bact.handwash();
+  res <- next.state(c(0,n.before),c(0,p.det));
+  return(res[2]);
+}
+
+# Numbers of bacteria on hands after bathing, given numbers before
+hand.bathe <- function(n.before){
+  p.det <- det.bact.bathe();
+  res <- next.state(c(0,n.before),c(0,p.det));
+  return(res[2]);
+}
+
+# number of microbes on hand after touching feces once
+hand.feces <- function(conc){
+  lam <- adherence.water.hand()*conc;
+  if(lam > 1e8) return(round(lam));
+  return(rpois(n=1,lambda=lam));
+}
+
+# Numbers of bacteria on hands after accidental contact with feces
+hand.defec <- function(n.before,conc){
+  lam <- adherence.water.hand()*conc;
+  n.feces <- ifelse(lam > 1e8, round(lam),rpois(n=1,lambda=lam));
+  p.att <- 0.95;
+  p.det <- 0
+  res <- next.state(c(n.feces,n.before),c(p.att,p.det));
+  return(res[2]);
+}
+

@@ -1,0 +1,22 @@
+version <- "v1"
+
+basedir <- "~/stat/sanipath/exposure/dw/";
+filemc <- paste(basedir,version,"/output/",version,".mcmc.rda",sep="");
+cat("loading drinking water intake parameter estimates ",version,"\n");
+load(filemc);
+
+dw.tapsmpl <- function(k.neighb){
+  k.iter <- sample((1:nrow(dwpars$mu.tap)),size=1);
+  intk <- rnorm(n=1,mean=dwpars$mu.tap[k.iter,k.neighb],
+                sd=sqrt(1/dwpars$tau.tap[k.iter,k.neighb]));
+  intk <- ifelse(intk < 8, intk, 8);
+  return(exp(intk));
+}
+
+dw.sacsmpl <- function(k.neighb){
+  k.iter <- sample((1:nrow(dwpars$mu.sac)),size=1);
+  intk <- rnorm(n=1,mean=dwpars$mu.sac[k.iter,k.neighb],
+                    sd=sqrt(1/dwpars$tau.sac[k.iter,k.neighb]));
+  intk <- ifelse(intk < 8, intk, 8);
+  return(exp(intk));
+}

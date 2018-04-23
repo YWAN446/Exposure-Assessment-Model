@@ -1,0 +1,80 @@
+library(foreign)
+
+basedir <- "~/stat/sanipath/data/sanipath24092013/";
+dbname <- "Bx081513.dta";
+childbx <- read.dta(paste(basedir,dbname,sep=""), convert.factors=TRUE,
+                    convert.underscore=TRUE, warn.missing.labels=TRUE);
+
+neighb <- childbx$neighb;
+neighb.levels <- levels(neighb);
+n.neighb <- nlevels(neighb);
+
+ageyg <- childbx$"hhs.306";
+ageunit <- factor(childbx$"hhs.306a");
+age.yr <- ifelse(ageunit=="months",ageyg/12,ageyg);
+
+dom <- factor(childbx$"dom");
+domnum <- childbx$"domnum";
+obs <- childbx$"obs";
+
+mklevs <- function(vec){
+  n <- length(vec);
+  levs <- array(NA,dim=c(n,2));
+  levs[1,] <- c(vec[1],mean(vec[1:2]));
+  for(k in 2:(n-2)){
+    levs[k,] <- c(levs[k-1,2],mean(c(vec[k],vec[k+1])));
+  }
+  levs[n-1,] <- c(levs[n-2,2],2*vec[n-1]-levs[n-2,2]);
+  levs[n,] <- c(levs[n-1,2],Inf);
+  return(levs);
+}
+
+### H2O consumption in ml
+watdrink <- childbx$"hhs.201";
+watqty <- childbx$"hhs.203";
+watunit <- factor(childbx$"hhs.203a");
+# what is the meaning of the "999"s?
+# there is no corresponding unit in hhs.203a
+dw.tap <- cbind(neighb[watdrink=="tap from pipe"],
+                watqty[watdrink=="tap from pipe"]); # cups
+dw.sac <- cbind(neighb[watdrink=="sachet"],
+                watqty[watdrink=="sachet"]);        # sachets
+dw.tap <- dw.tap[which(!is.na(dw.tap[,2])),];
+dw.sac <- dw.sac[which(!is.na(dw.sac[,2])),];
+n.tap <- nrow(dw.tap);
+n.sac <- nrow(dw.sac);
+tap.levels <- mklevs(sort(unique(dw.tap[,2])));
+sac.levels <- mklevs(sort(unique(dw.sac[,2])));
+neighb.tap <- dw.tap[,1];
+neighb.sac <- dw.sac[,1];
+drink.tap <- array(NA,dim=c(n.tap,2));
+for(k in 1:n.tap)
+  drink.tap[k,] <- log(tap.levels[which(tap.levels[,1] <= dw.tap[k,2] &
+                                        tap.levels[,2] > dw.tap[k,2]),]);
+drink.sac <- array(NA,dim=c(n.sac,2));
+for(k in 1:n.sac)
+  drink.sac[k,] <- log(tap.levels[which(tap.levels[,1] <= dw.sac[k,2] &
+                                        tap.levels[,2] > dw.sac[k,2]),]);
+drink.tap.cens <- rep(1,n.tap);
+drink.sac.cens <- rep(1,n.sac);
+
+drink.tap.init <- (drink.tap[,1] + drink.tap[,2])/2;
+drink.tap.init[drink.tap.init== Inf] <- log(tap.levels[nrow(tap.levels),1])+1;
+drink.tap.init[drink.tap.init==-Inf] <- log(tap.levels[1,2])-1;
+drink.sac.init <- (drink.sac[,1] + drink.sac[,2])/2;
+drink.sac.init[drink.sac.init== Inf] <- log(sac.levels[nrow(sac.levels),1])+1;
+drink.sac.init[drink.sac.init==-Inf] <- log(sac.levels[1,2])-1;
+
+cup <- 237;    # ml
+sachet <- 500; # ml
+
+hyp.tap <- rbind(c(0,2),c(0.001,0.001));
+hyp.sac <- rbind(c(0,2),c(0.001,0.001));
+
+data <- list("n.neighb"=n.neighb,
+             "neighb.tap"=neighb.tap,"n.tap"=n.tap,"hyp.tap"=hyp.tap,
+             "drink.tap"=drink.tap,"drink.tap.cens"=drink.tap.cens,
+             "neighb.sac"=neighb.sac,"n.sac"=n.sac,"hyp.sac"=hyp.sac,
+             "drink.sac"=drink.sac,"drink.sac.cens"=drink.sac.cens);
+
+data.init <- list("cons.tap"=drink.tap.init,"cons.sac"=drink.sac.init);

@@ -1,0 +1,46 @@
+library(rjags);
+
+ver <- "v12";
+# nburn <- 1000;
+# niter <- 10000;
+# thin <- 10;
+nburn <- 100;
+niter <- 1000;
+thin <- 1;
+# tomonitor <- c("logr","loglambda");
+tomonitor <- c("loglambda");
+
+source(paste(ver,"data.r",sep="."));
+
+if(subset=="hh") popdata <- hhdata;
+if(subset=="ns") popdata <- nsdata;
+
+cat("<<< MCMC Sampling >>>\n");
+model.jags <- jags.model(file=paste(ver,"model.jags",sep="."),
+                         data=popdata,
+                         n.chains=3,n.adapt=nburn,quiet=FALSE);
+mcmc.post <- coda.samples(model.jags,tomonitor,n.iter=niter,thin=thin);
+
+save(mcmc.post,file=paste(ver,"-post-",subset,".rda",sep=""),ascii=TRUE);
+
+# Extract mcmc values of the important parameters
+# and save them in a text file
+cat("<<< Extract parameters >>>\n");
+source(paste(ver,"extract","r",sep="."));
+
+cat("<<< Storing the results >>>\n");
+sink(paste(ver,"results",subset,"txt",sep="."));
+print(summary(mcmc.post));
+sink();
+
+# cat("<<< Graphing results >>>\n");
+# pdf(paste(ver,"results",subset,"pdf",sep="."));
+# plot(mcmc.post,trace=TRUE,density=FALSE);
+# plot(mcmc.post,trace=FALSE,density=TRUE);
+# autocorr(mcmcpos);
+# autocorr.plot(mcmcpos);
+# crosscorr(mcmcpos);
+# crosscorr.plot(mcmcpos);
+# geweke.diag(mcmcpos);
+# summary(mcmc.post);
+# dev.off();

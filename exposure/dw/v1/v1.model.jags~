@@ -1,0 +1,22 @@
+model {
+  for(k.obs in 1:n.tap) {
+    cons.tap[k.obs] ~ dgamma(r.tap,1/lambda.tap[drink.tap[k.obs,1]]);
+    drink.tap.cens[k.obs,2] ~ dinterval(drink.tap[k.obs,2],censorlimit.tap);
+    drink.tap[k.obs,2] ~ dpois(cons.tap[k.obs]);
+  }
+  for(k.obs in 1:n.sac) {
+    cons.sac[k.obs] ~ dgamma(r.sac,1/lambda.sac[drink.sac[k.obs,1]]);
+    drink.sac.cens[k.obs,2] ~ dinterval(drink.sac[k.obs,2],censorlimit.sac);
+    drink.sac[k.obs,2] ~ dpois(cons.sac[k.obs]);
+  }
+  for(k.neighb in 1:n.neighb){
+    lambda.tap[k.neighb] <- exp(loglambda.tap[k.neighb])
+    loglambda.tap[k.neighb] ~ dnorm(mu.loglambda.tap,1/sd.loglambda.tap^2)
+    lambda.sac[k.neighb] <- exp(loglambda.sac[k.neighb])
+    loglambda.sac[k.neighb] ~ dnorm(mu.loglambda.sac,1/sd.loglambda.sac^2)
+  }
+  r.tap <- exp(logr.tap)
+  logr.tap ~ dnorm(mu.logr.tap,1/sd.logr.tap^2)
+  r.sac <- exp(logr.sac)
+  logr.sac ~ dnorm(mu.logr.sac,1/sd.logr.sac^2)
+}

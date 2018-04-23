@@ -1,0 +1,59 @@
+model {
+  # hyperparameters
+  # microbial contamination
+  #
+  # shape factor
+  for (k.comb in 1:num.comb) {
+    ec.logr[k.comb] ~ dnorm(mu.ec.logr[k.comb],1/sd.ec.logr^2);
+    ec.r[k.comb] <- exp(ec.logr[k.comb]);
+    en.logr[k.comb] ~ dnorm(mu.en.logr[k.comb],1/sd.en.logr^2);
+    en.r[k.comb] <- exp(en.logr[k.comb]);
+    cm.logr[k.comb] ~ dnorm(mu.cm.logr[k.comb],1/sd.cm.logr^2);
+    cm.r[k.comb] <- exp(cm.logr[k.comb]);
+  }
+  # scale factor by neighbourhood
+  for(k.neighb in 1:n.neighb) {
+    for (k.comb in 1:num.comb) {
+      ec.loglambda[k.neighb,k.comb] ~ 
+        dnorm(mu.ec.loglambda[k.comb],1/sd.ec.loglambda^2);
+      ec.lambda[k.neighb,k.comb] <- exp(ec.loglambda[k.neighb,k.comb]);
+      en.loglambda[k.neighb,k.comb] ~
+        dnorm(mu.en.loglambda[k.comb],1/sd.en.loglambda^2);
+      en.lambda[k.neighb,k.comb] <- exp(en.loglambda[k.neighb,k.comb]);
+      cm.loglambda[k.neighb,k.comb] ~
+        dnorm(mu.cm.loglambda[k.comb],1/sd.cm.loglambda^2);
+      cm.lambda[k.neighb,k.comb] <- exp(cm.loglambda[k.neighb,k.comb]);
+    }
+  }
+  # count data
+  for(k.smpl in 1:n.smpl) {
+    ec.conc[ind.env.smp[k.smpl,4]] ~ dgamma(ec.r[ind.env.smp[k.smpl,1]]+0.02,
+      1/ec.lambda[ind.env.smp[k.smpl,5],ind.env.smp[k.smpl,1]]);
+    for(k.repl in 1:ec.repl[ind.env.smp[k.smpl,4]]) {
+     ec.data[ind.env.smp[k.smpl,4],k.repl,3] ~
+       dinterval(ec.data[ind.env.smp[k.smpl,4],k.repl,1],censorlimit);
+     ec.data[ind.env.smp[k.smpl,4],k.repl,1] ~
+       dpois(ec.conc[ind.env.smp[k.smpl,4]]*
+       ec.data[ind.env.smp[k.smpl,4],k.repl,2]);
+     }
+    en.conc[ind.env.smp[k.smpl,4]] ~ dgamma(en.r[ind.env.smp[k.smpl,1]]+0.02,
+      1/en.lambda[ind.env.smp[k.smpl,5],ind.env.smp[k.smpl,1]]);
+    for(k.repl in 1:en.repl[ind.env.smp[k.smpl,4]]) {
+     en.data[ind.env.smp[k.smpl,4],k.repl,3] ~
+       dinterval(en.data[ind.env.smp[k.smpl,4],k.repl,1],censorlimit);
+     en.data[ind.env.smp[k.smpl,4],k.repl,1] ~
+       dpois(en.conc[ind.env.smp[k.smpl,4]]*
+       en.data[ind.env.smp[k.smpl,4],k.repl,2]);
+     }
+    cm.conc[ind.env.smp[k.smpl,4]] ~ dgamma(cm.r[ind.env.smp[k.smpl,1]]+0.02,
+      1/cm.lambda[ind.env.smp[k.smpl,5],ind.env.smp[k.smpl,1]]);
+    for(k.repl in 1:cm.repl[ind.env.smp[k.smpl,4]]) {
+     cm.data[ind.env.smp[k.smpl,4],k.repl,3] ~
+       dinterval(cm.data[ind.env.smp[k.smpl,4],k.repl,1],censorlimit);
+     cm.data[ind.env.smp[k.smpl,4],k.repl,1] ~
+       dpois(cm.conc[ind.env.smp[k.smpl,4]]*
+       cm.data[ind.env.smp[k.smpl,4],k.repl,2]);
+     }
+   }
+  #
+} # end model

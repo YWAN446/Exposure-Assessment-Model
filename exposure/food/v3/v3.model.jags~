@@ -1,0 +1,52 @@
+var cons[n.tot,2],logcons[n.tot,2],
+    mu.logcons[n.neighb,2],prec.logcons[n.neighb,2,2]
+
+model {
+  C <- 1e4
+  for(k.obs in 1:n.prod){
+    intk[k.obs,1] <- exp(logcons[k.obs,1])
+    intk.obs[k.obs,1] <- fd.prod[ind.prod[k.obs]]
+    pois0[k.obs,1] <- exp(-intk[k.obs,1])
+    pois1[k.obs,1] <- intk[k.obs,1]*exp(-intk[k.obs,1])
+    pois2[k.obs,1] <- (intk[k.obs,1]^2)*exp(-intk[k.obs,1])/(2)
+    pois3[k.obs,1] <- (intk[k.obs,1]^3)*exp(-intk[k.obs,1])/(2*3)
+    pois4[k.obs,1] <- (intk[k.obs,1]^4)*exp(-intk[k.obs,1])/(2*3*4)
+    pois5[k.obs,1] <- (intk[k.obs,1]^5)*exp(-intk[k.obs,1])/(2*3*4*5)
+    pois6[k.obs,1] <- (intk[k.obs,1]^6)*exp(-intk[k.obs,1])/(2*3*4*5*6)
+    pois2.6[k.obs,1] <- pois2[k.obs,1] + pois2[k.obs,1] + pois3[k.obs,1] +
+                        pois4[k.obs,1] + pois5[k.obs,1] + pois6[k.obs,1]
+    pois7[k.obs,1] <- 1 - (pois0[k.obs,1] + pois1[k.obs,1] + pois2.6[k.obs,1])
+    phi[k.obs,1] <- ifelse(intk.obs[k.obs,1]==4,pois0[k.obs,1],
+                      ifelse(intk.obs[k.obs,1]==3,pois1[k.obs,1],
+		        ifelse(intk.obs[k.obs,1]==2,pois2.6[k.obs,1],
+		          ifelse(intk.obs[k.obs,1]==1,pois7[k.obs,1],0))))
+    zeros[k.obs,1] ~ dpois(-phi[k.obs,1]+C)
+  }
+  for(k.obs in 1:n.vend){
+    intk[k.obs,2] <- exp(logcons[k.obs,2])
+    intk.obs[k.obs,2] <- fd.vend[ind.vend[k.obs]]
+    pois0[k.obs,2] <- exp(-intk[k.obs,2])
+    pois1[k.obs,2] <- intk[k.obs,2]*exp(-intk[k.obs,2])
+    pois2[k.obs,2] <- (intk[k.obs,2]^2)*exp(-intk[k.obs,2])/(2)
+    pois3[k.obs,2] <- (intk[k.obs,2]^3)*exp(-intk[k.obs,2])/(2*3)
+    pois4[k.obs,2] <- (intk[k.obs,2]^4)*exp(-intk[k.obs,2])/(2*3*4)
+    pois5[k.obs,2] <- (intk[k.obs,2]^5)*exp(-intk[k.obs,2])/(2*3*4*5)
+    pois6[k.obs,2] <- (intk[k.obs,2]^6)*exp(-intk[k.obs,2])/(2*3*4*5*6)
+    pois2.6[k.obs,2] <- pois2[k.obs,2] + pois2[k.obs,2] + pois3[k.obs,2] +
+                        pois4[k.obs,2] + pois5[k.obs,2] + pois6[k.obs,2]
+    pois7[k.obs,2] <- 1 - (pois0[k.obs,2] + pois1[k.obs,2] + pois2.6[k.obs,2])
+    phi[k.obs,2] <- ifelse(intk.obs[k.obs,2]==4,pois0[k.obs,2],
+                      ifelse(intk.obs[k.obs,2]==3,pois1[k.obs,2],
+		        ifelse(intk.obs[k.obs,2]==2,pois2.6[k.obs,2],
+		          ifelse(intk.obs[k.obs,2]==1,pois7[k.obs,2],0))))
+    zeros[k.obs,2] ~ dpois(-phi[k.obs,2]+C)
+  }
+  for(k.obs in 1:n.tot){
+   logcons[k.obs,] ~ dmnorm(mu.logcons[fd.neighb[k.obs],],
+                            prec.logcons[fd.neighb[k.obs],,])
+  }
+  for(k.neighb in 1:n.neighb){
+    mu.logcons[k.neighb,] ~ dmnorm(mu.hyp[k.neighb,],prec.hyp[k.neighb,,])
+    prec.logcons[k.neighb,,] ~ dwish(omega[k.neighb,,],wishdf)
+  }
+}

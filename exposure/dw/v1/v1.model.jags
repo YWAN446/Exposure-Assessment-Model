@@ -1,0 +1,16 @@
+model {
+  for(k.obs in 1:n.tap) {
+    cons.tap[k.obs] ~ dnorm(mu.tap[age.gr.tap[k.obs]],tau.tap[age.gr.tap[k.obs]])
+    drink.tap.cens[k.obs] ~ dinterval(cons.tap[k.obs],drink.tap[k.obs,]);
+  }
+  for(k.obs in 1:n.sac) {
+    cons.sac[k.obs] ~ dnorm(mu.sac[age.gr.sac[k.obs]],tau.sac[age.gr.sac[k.obs]])
+    drink.sac.cens[k.obs] ~ dinterval(cons.sac[k.obs],drink.sac[k.obs,]);
+  }
+  for(k.age in 1:n.age){
+    mu.tap[k.age] ~ dnorm(hyp.tap[1,1],hyp.tap[1,2])
+    tau.tap[k.age] ~ dgamma(hyp.tap[2,1],hyp.tap[2,2])
+    mu.sac[k.age] ~ dnorm(hyp.sac[1,1],hyp.sac[1,2])
+    tau.sac[k.age] ~ dgamma(hyp.sac[2,1],hyp.sac[2,2])
+  }
+}

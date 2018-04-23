@@ -1,0 +1,16 @@
+var pi.prod[n.neighb,n.lev], pi.vend[n.neighb,n.lev]
+
+model {
+  for(k.obs in 1:n.tot){
+    fd.prod[k.obs] ~ dcat(pi.prod[fd.neighb[k.obs],])
+    fd.vend[k.obs] ~ dcat(pi.vend[fd.neighb[k.obs],])
+  }
+  for(k.neighb in 1:n.neighb){
+    pi.prod[k.neighb,] ~ ddirch(a.prod[k.neighb,])
+    pi.vend[k.neighb,] ~ ddirch(a.vend[k.neighb,])
+    for(k.lev in 1:n.lev){
+      a.prod[k.neighb,k.lev] ~ dgamma(0.001,0.001)T(0.05,1000)
+      a.vend[k.neighb,k.lev] ~ dgamma(0.001,0.001)T(0.05,1000)
+    }
+  }
+}

@@ -1,0 +1,94 @@
+var p.comp[n.neighb,n.comp], p.behav[n.neighb,nmax.subj,n.comp,n.behav],
+    p.attr[n.behav,max.attr,max.attr.lev], p.gattr[n.global.attr,3]
+
+model {
+  for(k.neighb in 1:n.neighb) {
+    p.comp[k.neighb,] ~ ddirch(a.comp[k.neighb,])
+  }
+  for(k.behav in 1:n.behav) {
+    for(k.attr in 1:n.attr[k.behav]) {
+      p.attr[k.behav,k.attr,] ~ 
+        ddirch(a.attr[k.behav,k.attr,] %*%
+               attr.mask[,,ind.mask[k.behav,k.attr]])
+    }
+  }
+  for(k.gattr in 1:n.global.attr) {
+    p.gattr[k.gattr,] ~ ddirch(a.gattr[k.gattr,] %*%
+                                 global.attr.mask[,,k.gattr])
+  }
+  for(k.neighb in 1:n.neighb) {
+    for(k.subj in 1:n.subj[k.neighb]) {
+      for(k.comp in 1:n.comp) {
+        p.behav[k.neighb,k.subj,k.comp,] ~
+          ddirch(a.behav[k.neighb,k.comp,] %*% comp.mask[,,k.comp])
+      }
+      for(k.obs in 1:n.obs[k.neighb,k.subj]) {
+        comp[k.neighb,k.subj,k.obs] ~ dcat(p.comp[k.neighb,])
+        behav[k.neighb,k.subj,k.obs] ~
+          dcat(p.behav[k.neighb,k.subj,comp[k.neighb,k.subj,k.obs],])
+        time.obs[k.neighb,k.subj,k.obs] ~ 
+          dgamma(r.subj[k.neighb,k.subj,behav[k.neighb,k.subj,k.obs]],
+                 lambda.subj[k.neighb,k.subj,comp[k.neighb,k.subj,k.obs],
+                   behav[k.neighb,k.subj,k.obs]])
+        for(k.behav in 1:n.behav) {
+          for(k.attr in 1:n.attr[k.behav]) {
+            attr[k.neighb,k.subj,k.obs,k.behav,k.attr] ~
+              dcat(p.attr[k.behav,k.attr,])
+          }
+        }
+      }
+      for(k.behav in 1:n.behav) {
+        r.subj[k.neighb,k.subj,k.behav] ~
+          dgamma(r1[k.behav],lambda1[k.neighb,k.behav])
+        for(k.comp in 1:n.comp) {
+          lambda.subj[k.neighb,k.subj,k.comp,k.behav] ~
+            dgamma(r2[k.comp,k.behav],lambda2[k.neighb,k.comp,k.behav])
+        }
+      }
+      for(k.gattr in 1:n.global.attr) {
+        global.attr[k.neighb,k.subj,k.gattr] ~ dcat(p.gattr[k.gattr,])
+      }
+      for(k.freq in 1:n.global.freq) {
+        freq[k.neighb,k.subj,k.freq] ~ dgamma(r[k.freq],lambda[k.freq])
+        global.cens[k.neighb,k.subj,k.freq] ~
+          dinterval(global.freq[k.neighb,k.subj,k.freq],censorlimit)
+        global.freq[k.neighb,k.subj,k.freq] ~
+          dpois(freq[k.neighb,k.subj,k.freq])
+      }
+    }
+    for(k.comp in 1:n.comp) {
+      a.comp[k.neighb,k.comp] ~ dgamma(0.001,0.001)T(0.05,1000)
+      for(k.behav in 1:n.behav) {
+        lambda2[k.neighb,k.comp,k.behav] ~ dgamma(0.001,0.001)T(0.05,1000)
+        a.behav[k.neighb,k.comp,k.behav] ~ dgamma(0.001,0.001)T(0.05,1000)
+      }
+    }
+    for(k.behav in 1:n.behav) {
+      lambda1[k.neighb,k.behav] ~ dgamma(0.001,0.001)T(0.05,1000)
+    }
+  }
+  for(k.comp in 1:n.comp) {
+    for(k.behav in 1:n.behav) {
+      r2[k.comp,k.behav] ~ dgamma(0.001,0.001)T(0.05,1000)
+    }
+  }
+  for(k.behav in 1:n.behav) {
+    r1[k.behav] ~ dgamma(0.001,0.001)T(0.05,1000)
+    for(k.attr in 1:max.attr) {
+      for(k.lev in 1:max.attr.lev) {
+        a.attr[k.behav,k.attr,k.lev] ~ dgamma(0.001,0.001)T(0.05,1000)
+      }
+    }
+  }
+  for(k.gattr in 1:n.global.attr) {
+    for(k.gattr.lev in 1:3) {
+      a.gattr[k.gattr,k.gattr.lev] ~ dgamma(0.001,0.001)T(0.05,1000)
+    }
+  }
+  for(k.freq in 1:n.global.freq) {
+    logr[k.freq] ~ dnorm(mu.logr[k.freq],(1/sd.logr[k.freq])^2)
+    r[k.freq] <- exp(logr[k.freq])
+    loglambda[k.freq] ~ dnorm(mu.loglambda[k.freq],(1/sd.loglambda[k.freq])^2)
+    lambda[k.freq] <- exp(loglambda[k.freq])
+  }
+}
