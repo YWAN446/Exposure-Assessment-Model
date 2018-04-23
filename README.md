@@ -3,7 +3,7 @@ Yuke Wang, Christine L. Moe, and Peter F. M. Teunis
 
 The SaniPath exposure assessment model uses microbiological data on environmental contamination and observation data on behavior to develop a comprehensive quantitative evaluation of multiple exposure pathways to fecal contamination. The competing hazards model allows quantitative analysis of time specific behavioral data, efficiently using the observed durations of states to infer time used for behaviors, frequencies of behaviors, and the probability that critical sequences of activities occur. The fecal microbe transfer simulation model describes how fecal microbes were transferred from their source of contamination to ingestion using a network point of view. The most influential exposure pathway(s) and its characteristics can be identified to help prioritize the interventions that could effectively reduce the total exposure to fecal contamination and the health risks from this exposure.
 
-![Fecal Microbe Transfer Network](Figure001.pdf)
+![Fecal Microbe Transfer Network](Figure001.png)
 
 This repository includes all the codes (estimation, simulation, ploting) of SaniPath exposure assessment model. The primary results were published by Peter Teunis (https://www.ajtmh.org/content/journals/10.4269/ajtmh.15-0417) and by Yuke Wang (https://www.ajtmh.org/content/journals/10.4269/ajtmh.16-0408).
 
